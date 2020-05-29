@@ -1,0 +1,32 @@
+diff --git a/node_modules/vue-auto-routing/lib/webpack-plugin.js b/node_modules/vue-auto-routing/lib/webpack-plugin.js
+index 911a62a..7267cdd 100644
+--- a/node_modules/vue-auto-routing/lib/webpack-plugin.js
++++ b/node_modules/vue-auto-routing/lib/webpack-plugin.js
+@@ -4,6 +4,10 @@ const fs = require("fs");
+ const path = require("path");
+ const vue_route_generator_1 = require("vue-route-generator");
+ const pluginName = 'VueAutoRoutingPlugin';
++
++const VirtualModulesPlugin = require('webpack-virtual-modules');
++let lastVirtualState
++
+ class VueAutoRoutingPlugin {
+     constructor(options) {
+         this.options = options;
+@@ -13,11 +17,12 @@ class VueAutoRoutingPlugin {
+         const generate = () => {
+             const code = vue_route_generator_1.generateRoutes(this.options);
+             const to = path.resolve(__dirname, '../index.js');
+-            if (fs.existsSync(to) &&
+-                fs.readFileSync(to, 'utf8').trim() === code.trim()) {
+-                return;
++            const virtualModules = new VirtualModulesPlugin({[to]: code});
++            // Applying a webpack compiler to the virtual module
++            virtualModules.apply(compiler);
++            if (lastVirtualState !== code) {
++                virtualModules.writeModule(to,code);
+             }
+-            fs.writeFileSync(to, code);
+         };
+         compiler.hooks.thisCompilation.tap(pluginName, (compilation) => {
+             try {
